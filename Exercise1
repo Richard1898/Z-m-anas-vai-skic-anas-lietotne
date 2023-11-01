@@ -1,1 +1,84 @@
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QFileDialog, QColorDialog
+from PyQt5.QtGui import QPixmap, QPainter, QPen, QColor
+from PyQt5.QtCore import Qt
+
+class DrawingApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.initUI()
+
+    def initUI(self):
+        self.setGeometry(100, 100, 800, 600)
+        self.setWindowTitle("Zīmēšanas lietotne")
+
+        self.canvas = QPixmap(self.size())
+        self.canvas.fill(Qt.white)
+
+        self.lastPoint = None
+        self.pen = QPen()
+        self.pen.setWidth(2)
+        self.pen.setColor(QColor('black'))
+
+        self.statusBar()
+
+        mainMenu = self.menuBar()
+        fileMenu = mainMenu.addMenu('Fails')
+
+        saveAction = QAction('Saglabāt', self)
+        saveAction.triggered.connect(self.save)
+        fileMenu.addAction(saveAction)
+
+        clearAction = QAction('Notīrīt', self)
+        clearAction.triggered.connect(self.clear)
+        fileMenu.addAction(clearAction)
+
+        colorAction = QAction('Krāsa', self)
+        colorAction.triggered.connect(self.color_picker)
+        fileMenu.addAction(colorAction)
+
+    def paintEvent(self, e):
+        canvasPainter = QPainter(self)
+        canvasPainter.drawPixmap(self.rect(), self.canvas)
+
+    def mousePressEvent(self, e):
+        if e.button() == Qt.LeftButton:
+            self.lastPoint = e.pos()
+
+    def mouseMoveEvent(self, e):
+        if (e.buttons() & Qt.LeftButton) and self.lastPoint:
+            painter = QPainter(self.canvas)
+            painter.setPen(self.pen)
+            painter.drawLine(self.lastPoint, e.pos())
+            self.lastPoint = e.pos()
+            self.update()
+
+    def mouseReleaseEvent(self, e):
+        if e.button() == Qt.LeftButton:
+            self.lastPoint = None
+
+    def save(self):
+        options = QFileDialog.Options()
+        fileName, _ = QFileDialog.getSaveFileName(self, "Saglabāt kā attēlu", "", "Attēli (*.png);;Visi faili (*)", options=options)
+        if fileName:
+            self.canvas.save(fileName)
+
+    def clear(self):
+        self.canvas.fill(Qt.white)
+        self.update()
+
+    def color_picker(self):
+        color = QColorDialog.getColor()
+        if color.isValid():
+            self.pen.setColor(color)
+
+def main():
+    app = QApplication(sys.argv)
+    window = DrawingApp()
+    window.show()
+    sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    main()
 
